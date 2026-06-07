@@ -9,7 +9,42 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 // 步骤定义
-const STEPS = [
+interface Step {
+  id: number;
+  name: string;
+  icon: string;
+}
+
+interface Model {
+  id: string;
+  name: string;
+  provider: string;
+  color: string;
+  badge?: string;
+}
+
+interface CompanyType {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+}
+
+interface Style {
+  id: string;
+  name: string;
+  desc: string;
+  color: string;
+}
+
+interface InputMethod {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+}
+
+const STEPS: Step[] = [
   { id: 1, name: '输入方式', icon: '📝' },
   { id: 2, name: '选择模型', icon: '🤖' },
   { id: 3, name: '公司类型', icon: '🏢' },
@@ -17,7 +52,7 @@ const STEPS = [
   { id: 5, name: '开始生成', icon: '🚀' },
 ];
 
-const INPUT_METHODS = [
+const INPUT_METHODS: InputMethod[] = [
   { id: 'text', name: '文字输入', icon: '✏️', desc: '直接填写个人信息' },
   { id: 'pdf', name: '上传 PDF', icon: '📄', desc: '解析已有 PDF 简历' },
   { id: 'word', name: '上传 Word', icon: '📝', desc: '解析 Word 文档' },
@@ -26,7 +61,7 @@ const INPUT_METHODS = [
   { id: 'voice', name: '语音录入', icon: '🎤', desc: '语音转文字输入' },
 ];
 
-const MODELS = [
+const MODELS: Model[] = [
   { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', color: 'bg-green-500', badge: '推荐' },
   { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', color: 'bg-blue-500', badge: '推荐' },
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'Google', color: 'bg-purple-500' },
@@ -40,7 +75,7 @@ const MODELS = [
   { id: 'yi-large', name: 'Yi-Large', provider: '零一万物', color: 'bg-indigo-500' },
 ];
 
-const COMPANY_TYPES = [
+const COMPANY_TYPES: CompanyType[] = [
   { id: 'internet', name: '互联网大厂', icon: '🏢', desc: '字节/阿里/腾讯/美团' },
   { id: 'foreign', name: '外企', icon: '🌍', desc: 'Google/Apple/McKinsey' },
   { id: 'soe', name: '国企/体制', icon: '🏛️', desc: '央企/国企/事业单位' },
@@ -48,7 +83,7 @@ const COMPANY_TYPES = [
   { id: 'consulting', name: '咨询/金融', icon: '📊', desc: 'MBB/四大/投行' },
 ];
 
-const STYLES = [
+const STYLES: Style[] = [
   { id: 'classic', name: '经典', desc: '传统商务风格', color: 'from-gray-600 to-gray-700' },
   { id: 'modern', name: '现代', desc: '简约时尚设计', color: 'from-blue-500 to-indigo-600' },
   { id: 'minimal', name: '极简', desc: 'Less is more', color: 'from-gray-400 to-gray-500' },
@@ -64,10 +99,44 @@ export default function EditorPage() {
   const [selectedCompany, setSelectedCompany] = useState('internet');
   const [selectedStyle, setSelectedStyle] = useState('modern');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedResult, setGeneratedResult] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    personal: { name: '', title: '', email: '' },
+    experience: [] as { company: string; position: string; start_date: string; end_date: string; description: string; tech_stack: string[] }[],
+    education: [] as { school: string; degree: string; major: string; start_date: string; end_date: string }[],
+    skills: [] as string[],
+  });
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    setTimeout(() => setIsGenerating(false), 5000);
+    setGeneratedResult(null);
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          personal: formData.personal,
+          experience: formData.experience,
+          education: formData.education,
+          skills: formData.skills,
+          target_job: (document.querySelector('input[name="targetJob"]') as HTMLInputElement)?.value || '',
+          company_type: selectedCompany,
+          style: selectedStyle,
+          model: selectedModel,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || '生成失败');
+      }
+      const data = await res.json();
+      setGeneratedResult(data.summary);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '网络错误，请稍后重试';
+      alert('生成失败: ' + message);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -243,20 +312,37 @@ export default function EditorPage() {
               </div>
             </div>
 
-            {!isGenerating ? (
+            {!isGenerating && !generatedResult ? (
               <div className="mt-8 flex justify-between">
                 <button onClick={() => setCurrentStep(4)} className="btn-secondary">← 上一步</button>
                 <button onClick={handleGenerate} className="btn-primary text-lg px-8">
                   🚀 开始生成简历
                 </button>
               </div>
-            ) : (
+            ) : isGenerating ? (
               <div className="mt-12 text-center">
                 <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-brand-50 dark:bg-brand-900/30">
                   <div className="w-5 h-5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
                   <span className="text-brand-600 font-medium">AI 正在生成你的简历...</span>
                 </div>
                 <p className="mt-4 text-sm text-gray-500">预计 10-30 秒，请稍候</p>
+              </div>
+            ) : (
+              <div className="mt-8">
+                <div className="card p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl">✅</span>
+                    <h3 className="font-bold text-lg">简历生成成功！</h3>
+                  </div>
+                  <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap text-sm">
+                    {generatedResult}
+                  </div>
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button className="btn-primary" onClick={() => setGeneratedResult(null)}>重新生成</button>
+                  <Link href="/export" className="btn-secondary">导出简历</Link>
+                  <Link href="/dashboard" className="btn-secondary">查看全部</Link>
+                </div>
               </div>
             )}
           </div>

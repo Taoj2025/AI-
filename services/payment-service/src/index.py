@@ -11,6 +11,7 @@ import hmac
 import uuid
 import os
 from datetime import datetime, timedelta
+from contextlib import asynccontextmanager
 from typing import Dict, List, Optional, Any
 from enum import Enum
 
@@ -196,14 +197,19 @@ def cancel_stripe_subscription(subscription_id: str) -> bool:
         return False
 
 
-# ============================================================
-#  FastAPI App
-# ============================================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期"""
+    await init_db()
+    yield
+    await close_db()
+
 
 app = FastAPI(
     title="ResumeAI Payment Service",
     version="2.0.0",
     description="支付订阅管理 v2 · Stripe真实接入 · PostgreSQL持久化 · 4档套餐",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -213,16 +219,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup():
-    await init_db()
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    await close_db()
 
 
 # -------- Plans Query --------

@@ -5,8 +5,35 @@
 
 import Link from 'next/link';
 
+interface Model {
+  name: string;
+  provider: string;
+  color: string;
+  badge?: string;
+}
+
+interface CompanyType {
+  type: string;
+  name: string;
+  icon: string;
+  desc: string;
+}
+
+interface Template {
+  name: string;
+  category: string;
+  style: string;
+  uses: number;
+}
+
+interface Feature {
+  icon: string;
+  title: string;
+  desc: string;
+}
+
 // ---- 模型数据 ----
-const MODELS = [
+const MODELS: Model[] = [
   { name: 'GPT-4o', provider: 'OpenAI', color: 'bg-green-500', badge: '推荐' },
   { name: 'Claude 3.5', provider: 'Anthropic', color: 'bg-blue-500', badge: '推荐' },
   { name: 'Gemini 1.5', provider: 'Google', color: 'bg-purple-500' },
@@ -18,7 +45,7 @@ const MODELS = [
   { name: 'MiniMax M3', provider: 'MiniMax', color: 'bg-amber-500', badge: '新' },
 ];
 
-const COMPANY_TYPES = [
+const COMPANY_TYPES: CompanyType[] = [
   { type: 'internet', name: '互联网大厂', icon: '🏢', desc: '字节/阿里/腾讯/美团' },
   { type: 'foreign', name: '外企', icon: '🌍', desc: 'Google/Apple/McKinsey' },
   { type: 'soe', name: '国企/体制', icon: '🏛️', desc: '央企/国企/事业单位' },
@@ -26,7 +53,7 @@ const COMPANY_TYPES = [
   { type: 'consulting', name: '咨询/金融', icon: '📊', desc: 'MBB/四大/投行' },
 ];
 
-const TEMPLATES = [
+const TEMPLATES: Template[] = [
   { name: '互联网技术岗', category: 'tech', style: 'modern', uses: 15280 },
   { name: '外企商务精英', category: 'management', style: 'classic', uses: 8930 },
   { name: '国企公务员', category: 'general', style: 'classic', uses: 12450 },
@@ -35,7 +62,7 @@ const TEMPLATES = [
   { name: '学术研究员', category: 'education', style: 'academic', uses: 5340 },
 ];
 
-const FEATURES = [
+const FEATURES: Feature[] = [
   { icon: '🤖', title: '14+ AI 模型', desc: '支持 GPT-4o、Claude、Gemini、DeepSeek 等主流大模型，一键切换' },
   { icon: '🎯', title: '5 种公司适配', desc: '互联网大厂/外企/国企/创业/咨询，每种类型差异化生成策略' },
   { icon: '📄', title: '7 种导出格式', desc: 'PDF/Word/PPT/PNG/HTML/Markdown，满足各种场景需求' },
