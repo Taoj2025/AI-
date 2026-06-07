@@ -251,12 +251,19 @@ export default function EditorPage() {
                 <button
                   key={model.id}
                   onClick={() => setSelectedModel(model.id)}
-                  className={`p-5 rounded-xl border-2 text-left transition-all ${
+                  className={`p-5 rounded-xl border-2 text-left transition-all relative ${
                     selectedModel === model.id
-                      ? 'border-indigo-600 bg-indigo-50'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
+                      ? 'border-indigo-600 bg-indigo-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/30'
                   }`}
                 >
+                  {selectedModel === model.id && (
+                    <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-gray-900">{model.name}</div>
@@ -294,12 +301,19 @@ export default function EditorPage() {
                 <button
                   key={company.id}
                   onClick={() => setSelectedCompany(company.id)}
-                  className={`p-5 rounded-xl border-2 text-left transition-all ${
+                  className={`p-5 rounded-xl border-2 text-left transition-all relative ${
                     selectedCompany === company.id
-                      ? 'border-indigo-600 bg-indigo-50'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
+                      ? 'border-indigo-600 bg-indigo-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/30'
                   }`}
                 >
+                  {selectedCompany === company.id && (
+                    <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                  )}
                   <div className="font-semibold text-gray-900">{company.name}</div>
                   <div className="mt-1 text-sm text-gray-500">{company.desc}</div>
                 </button>
@@ -328,12 +342,19 @@ export default function EditorPage() {
                 <button
                   key={style.id}
                   onClick={() => setSelectedStyle(style.id)}
-                  className={`p-5 rounded-xl border-2 text-left transition-all ${
+                  className={`p-5 rounded-xl border-2 text-left transition-all relative ${
                     selectedStyle === style.id
-                      ? 'border-indigo-600 bg-indigo-50'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
+                      ? 'border-indigo-600 bg-indigo-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/30'
                   }`}
                 >
+                  {selectedStyle === style.id && (
+                    <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                  )}
                   <div className="font-semibold text-gray-900">{style.name}</div>
                   <div className="mt-1 text-sm text-gray-500">{style.desc}</div>
                 </button>
