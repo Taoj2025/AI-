@@ -405,8 +405,12 @@ _db_instance: Optional[AnalyticsDB] = None
 def get_db() -> AnalyticsDB:
     global _db_instance
     if _db_instance is None:
-        if os.getenv("ANALYTICS_DB_BACKEND") == "clickhouse":
+        backend = os.getenv("ANALYTICS_DB_BACKEND", "sqlite")
+        if backend == "clickhouse":
             _db_instance = ClickHouseDB()
+        elif backend == "sqlite":
+            from .sqlitedb import SqliteAnalyticsDB
+            _db_instance = SqliteAnalyticsDB()
         else:
             _db_instance = MemoryDB()
     return _db_instance

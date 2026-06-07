@@ -159,6 +159,217 @@ class MemoryPaymentDB(PaymentDB):
 
 
 # ============================================================
+#  SqlitePaymentDB — 无需 Docker 的 SQLite 开发数据库
+# ============================================================
+
+class SqlitePaymentDB(PaymentDB):
+    """SQLite payment backend — 开发环境零依赖"""
+
+    def __init__(self):
+        self._conn = None
+
+    async def init(self) -> None:
+        import aiosqlite
+        db_path = os.getenv("PAYMENT_DB_PATH", os.path.join(os.path.dirname(__file__), "..", "data", "payment.db"))
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        self._conn = await aiosqlite.connect(db_path)
+        self._conn.row_factory = aiosqlite.Row
+        await self._conn.executescript("""
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id TEXT PRIMARY KEY,
+                user_id TEXT UNIQUE NOT NULL,
+                tier TEXT NOT NULL DEFAULT 'free',
+                status TEXT NOT NULL DEFAULT 'active',
+                payment_provider TEXT,
+                price_cents INTEGER DEFAULT 0,
+                current_period_start TEXT,
+                current_period_end TEXT,
+                cancel_at_period_end INTEGER DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS transactions (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                payment_provider TEXT,
+                provider_transaction_id TEXT,
+                amount_cents INTEGER NOT NULL DEFAULT 0,
+                currency TEXT NOT NULL DEFAULT 'CNY',
+                status TEXT NOT NULL DEFAULT 'pending',
+                description TEXT DEFAULT '',
+                metadata TEXT DEFAULT '{}',
+                paid_at TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS invoices (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                transaction_id TEXT,
+                invoice_number TEXT UNIQUE NOT NULL,
+                amount TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                pdf_url TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS usage_records (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                category TEXT NOT NULL DEFAULT 'ai',
+                amount_cents INTEGER DEFAULT 0,
+                description TEXT DEFAULT '',
+                metadata TEXT DEFAULT '{}',
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id);
+            CREATE INDEX IF NOT EXISTS idx_invoices_user ON invoices(user_id);
+            CREATE INDEX IF NOT EXISTS idx_usage_user ON usage_records(user_id);
+        """)
+        await self._conn.commit()
+
+    async def close(self) -> None:
+        if self._conn:
+            await self._conn.close()
+            self._conn = None
+
+    # -- Subscription --
+    async def get_or_create_subscription(self, user_id: str) -> dict:
+        sub = await self.get_subscription(user_id)
+        if sub:
+            return sub
+        sub_id = str(uuid.uuid4())
+        await self._conn.execute(
+            "INSERT INTO subscriptions (id, user_id) VALUES (?, ?)",
+            (sub_id, user_id),
+        )
+        await self._conn.commit()
+        return await self.get_subscription(user_id)
+
+    async def get_subscription(self, user_id: str) -> Optional[dict]:
+        cursor = await self._conn.execute(
+            "SELECT * FROM subscriptions WHERE user_id = ?", (user_id,)
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            return None
+        return dict(row)
+
+    async def update_subscription(self, user_id: str, **fields) -> None:
+        if not fields:
+            return
+        safe_fields = {k: v for k, v in fields.items() if k in self._ALLOWED_SUBSCRIPTION_FIELDS}
+        if not safe_fields:
+            return
+        set_clause = ", ".join(f"{k} = ?" for k in safe_fields)
+        values = list(safe_fields.values()) + [user_id]
+        await self._conn.execute(
+            f"UPDATE subscriptions SET {set_clause} WHERE user_id = ?", values
+        )
+        await self._conn.commit()
+
+    # -- Transaction --
+    async def create_transaction(self, tx: dict) -> dict:
+        tx_id = str(uuid.uuid4())
+        await self._conn.execute(
+            """INSERT INTO transactions
+               (id, user_id, payment_provider, provider_transaction_id,
+                amount_cents, currency, status, description, metadata)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (tx_id, tx["user_id"], tx.get("provider"), tx.get("provider_transaction_id"),
+             tx.get("amount_cents", 0), tx.get("currency", "CNY"),
+             tx.get("status", "pending"), tx.get("description", ""),
+             json.dumps(tx.get("metadata", {}))),
+        )
+        await self._conn.commit()
+        return {"id": tx_id, **tx}
+
+    async def get_transaction(self, tx_id: str) -> Optional[dict]:
+        cursor = await self._conn.execute(
+            "SELECT * FROM transactions WHERE id = ?", (tx_id,)
+        )
+        row = await cursor.fetchone()
+        return dict(row) if row else None
+
+    async def get_user_transactions(self, user_id: str) -> list:
+        cursor = await self._conn.execute(
+            "SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC", (user_id,)
+        )
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+
+    async def update_transaction(self, tx_id: str, **fields) -> None:
+        if not fields:
+            return
+        safe_fields = {k: v for k, v in fields.items() if k in self._ALLOWED_TRANSACTION_FIELDS}
+        if not safe_fields:
+            return
+        set_clause = ", ".join(f"{k} = ?" for k in safe_fields)
+        values = list(safe_fields.values()) + [tx_id]
+        await self._conn.execute(
+            f"UPDATE transactions SET {set_clause} WHERE id = ?", values
+        )
+        await self._conn.commit()
+
+    # -- Invoice --
+    async def create_invoice(self, invoice: dict) -> dict:
+        inv_id = str(uuid.uuid4())
+        await self._conn.execute(
+            """INSERT INTO invoices
+               (id, user_id, transaction_id, invoice_number, amount, status)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (inv_id, invoice["user_id"], invoice.get("transaction_id"),
+             invoice.get("invoice_number", f"INV-{inv_id[:8]}"),
+             invoice.get("amount", "0"), invoice.get("status", "pending")),
+        )
+        await self._conn.commit()
+        return {"id": inv_id, **invoice}
+
+    async def get_user_invoices(self, user_id: str) -> list:
+        cursor = await self._conn.execute(
+            "SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", (user_id,)
+        )
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+
+    # -- Usage --
+    async def record_usage(self, record: dict) -> dict:
+        rec_id = str(uuid.uuid4())
+        await self._conn.execute(
+            """INSERT INTO usage_records
+               (id, user_id, category, amount_cents, description, metadata)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (rec_id, record["user_id"], record.get("category", "ai"),
+             record.get("amount_cents", 0), record.get("description", ""),
+             json.dumps(record.get("metadata", {}))),
+        )
+        await self._conn.commit()
+        return {"id": rec_id, **record}
+
+    async def get_user_usage(self, user_id: str) -> list:
+        cursor = await self._conn.execute(
+            "SELECT * FROM usage_records WHERE user_id = ? ORDER BY created_at DESC", (user_id,)
+        )
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+
+    async def get_month_usage(self, user_id: str, category: str) -> int:
+        cursor = await self._conn.execute(
+            """SELECT COALESCE(SUM(amount_cents), 0) as total
+               FROM usage_records
+               WHERE user_id = ? AND category = ?
+               AND created_at >= datetime('now', 'start of month')""",
+            (user_id, category),
+        )
+        row = await cursor.fetchone()
+        return row["total"] if row else 0
+
+    async def clear(self) -> None:
+        if self._conn:
+            for table in ("usage_records", "invoices", "transactions", "subscriptions"):
+                await self._conn.execute(f"DELETE FROM {table}")
+            await self._conn.commit()
+
+
+# ============================================================
 #  PostgresPaymentDB — Production PostgreSQL implementation
 # ============================================================
 
@@ -381,8 +592,11 @@ _db_instance: Optional[PaymentDB] = None
 def get_db() -> PaymentDB:
     global _db_instance
     if _db_instance is None:
-        if os.getenv("PAYMENT_DB_BACKEND") == "postgres":
+        backend = os.getenv("PAYMENT_DB_BACKEND", "sqlite")
+        if backend == "postgres":
             _db_instance = PostgresPaymentDB()
+        elif backend == "sqlite":
+            _db_instance = SqlitePaymentDB()
         else:
             _db_instance = MemoryPaymentDB()
     return _db_instance

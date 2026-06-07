@@ -4,8 +4,7 @@ ResumeAI Analytics Service — 数据分析服务
 支持 ClickHouse (生产) / MemoryDB (测试)
 """
 
-from __future__ import annotations
-
+from contextlib import asynccontextmanager
 import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
@@ -17,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .db import get_db, init_db, close_db, MemoryDB, set_db
+from .sqlitedb import SqliteAnalyticsDB
 
 
 # ============================================================
@@ -77,10 +77,19 @@ class FunnelStep(BaseModel):
 #  FastAPI App
 # ============================================================
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期"""
+    await init_db()
+    yield
+    await close_db()
+
+
 app = FastAPI(
     title="ResumeAI Analytics Service",
     version="2.0.0",
-    description="数据分析 · 用户行为追踪 · AI调用统计 · 收入报表 · ClickHouse",
+    description="用户行为追踪、AI调用统计、收入报表、用户增长漏斗、实时仪表盘",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -90,16 +99,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup():
-    await init_db()
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    await close_db()
 
 
 # -------- Event Tracking --------
