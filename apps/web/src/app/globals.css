@@ -15,6 +15,15 @@
   body {
     @apply font-sans;
   }
+  
+  /* 确保所有按钮和可点击元素有指针光标 */
+  button {
+    cursor: pointer;
+  }
+  
+  a {
+    cursor: pointer;
+  }
 }
 
 @layer components {
@@ -25,16 +34,33 @@
   .btn-primary:hover {
     @apply shadow-lg shadow-indigo-500/25 transform -translate-y-0.5;
   }
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
 
   .btn-secondary {
     @apply px-6 py-2.5 rounded-xl text-gray-700 dark:text-gray-300 font-medium
            bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
            transition-all duration-200 hover:shadow-md;
   }
+  .btn-secondary:active {
+    transform: scale(0.98);
+  }
 
   .card {
     @apply bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800
            transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    cursor: pointer;
+  }
+  
+  .card-interactive {
+    @apply bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800
+           transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    cursor: pointer;
+  }
+  
+  .card-interactive:active {
+    transform: scale(0.98);
   }
 
   .badge {
@@ -72,4 +98,21 @@
     @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-2xl
            border border-white/20 dark:border-gray-800/50 shadow-xl;
   }
+}
+
+/* 全局按钮样式 - 确保所有按钮可点击 */
+button,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+a.btn,
+a.button {
+  cursor: pointer;
+}
+
+/* 移除按钮的默认outline，在focus时添加自定义样式 */
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid #6366F1;
+  outline-offset: 2px;
 }
