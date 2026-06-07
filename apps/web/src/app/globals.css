@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-primary: #6366F1;
+  --brand-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+@layer base {
+  body {
+    @apply font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-2.5 rounded-xl text-white font-medium transition-all duration-200;
+    background: var(--brand-gradient);
+  }
+  .btn-primary:hover {
+    @apply shadow-lg shadow-indigo-500/25 transform -translate-y-0.5;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-2.5 rounded-xl text-gray-700 dark:text-gray-300 font-medium
+           bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
+           transition-all duration-200 hover:shadow-md;
+  }
+
+  .card {
+    @apply bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800
+           transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-green {
+    @apply badge bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400;
+  }
+  .badge-blue {
+    @apply badge bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400;
+  }
+  .badge-purple {
+    @apply badge bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400;
+  }
+  .badge-orange {
+    @apply badge bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400;
+  }
+  .badge-red {
+    @apply badge bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400;
+  }
+  .badge-teal {
+    @apply badge bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400;
+  }
+  .badge-indigo {
+    @apply badge bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background: var(--brand-gradient);
+  }
+
+  .glass-card {
+    @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-2xl
+           border border-white/20 dark:border-gray-800/50 shadow-xl;
+  }
+}

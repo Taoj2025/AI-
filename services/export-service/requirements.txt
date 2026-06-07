@@ -1,0 +1,14 @@
+fastapi==0.110.0
+uvicorn[standard]==0.27.0
+pydantic==2.6.0
+pydantic-settings==2.1.0
+python-multipart==0.0.9
+python-docx==1.1.0        # Word 导出
+python-pptx==0.6.21        # PPT 导出
+reportlab==4.5.1            # PDF 导出（纯 Python）
+Pillow==12.2.0              # 图片处理
+jinja2==3.1.6               # HTML 模板
+markdown==3.5.0              # Markdown 转换
+minio==7.2.0                # 对象存储
+redis==5.0.0
+httpx==0.26.0

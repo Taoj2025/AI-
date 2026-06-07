@@ -1,0 +1,10 @@
+# pnpm Workspace 配置
+packages:
+  # 应用程序
+  - "apps/*"
+  # 共享包
+  - "packages/*"
+  # 微服务项目
+  - "services/*"
+  # 基础设施（不参与 workspace）
+  # infra/ 单独管理

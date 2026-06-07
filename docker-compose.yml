@@ -1,0 +1,276 @@
+# ResumeAI 全栈本地开发环境
+# 7个微服务 + 4个基础设施 + 1个API Gateway + Nginx
+version: "3.9"
+
+services:
+  # ═══════════════════ 基础设施 ═══════════════════
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: resumeai_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: resumeai
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: resumeai_db
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/databases/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resumeai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - resumeai_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: resumeai_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redispass
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redispass", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - resumeai_net
+
+  minio:
+    image: minio/minio:latest
+    container_name: resumeai_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: resumeai
+      MINIO_ROOT_PASSWORD: resumeai123
+      MINIO_REGION: cn-south
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - resumeai_net
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24-alpine
+    container_name: resumeai_clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_DB: resumeai_analytics
+      TZ: Asia/Shanghai
+    ports:
+      - "8123:8123"   # HTTP interface
+      - "9000"         # Native protocol (not exposed externally, conflicts with MinIO)
+    volumes:
+      - clickhousedata:/var/lib/clickhouse
+      - ./infra/clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - resumeai_net
+
+  # ═══════════════════ 微服务 ═══════════════════
+
+  # -------- API Gateway (Node.js Fastify) --------
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: resumeai_api_gateway
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${API_GATEWAY_PORT:-3000}:3000"
+    depends_on:
+      - resume-service
+      - user-service
+    networks:
+      - resumeai_net
+
+  # -------- 简历 CRUD 服务（Node.js Fastify）--------
+  resume-service:
+    build:
+      context: .
+      dockerfile: services/resume-service/Dockerfile
+    container_name: resumeai_resume_service
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${RESUME_SERVICE_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - resumeai_net
+
+  # -------- 导出服务（Python FastAPI）--------
+  export-service:
+    build:
+      context: .
+      dockerfile: services/export-service/Dockerfile
+    container_name: resumeai_export_service
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${EXPORT_SERVICE_PORT:-3002}:3002"
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - resumeai_net
+
+  # -------- AI 调度服务（Python FastAPI）--------
+  ai-dispatch:
+    build:
+      context: .
+      dockerfile: services/ai-dispatch/Dockerfile
+    container_name: resumeai_ai_dispatch
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${AI_DISPATCH_PORT:-3003}:3003"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - resumeai_net
+
+  # -------- 用户认证服务（Node.js Fastify）--------
+  user-service:
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
+    container_name: resumeai_user_service
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${USER_SERVICE_PORT:-3004}:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - resumeai_net
+
+  # -------- 模板管理服务（Python FastAPI）--------
+  template-service:
+    build:
+      context: .
+      dockerfile: services/template-service/Dockerfile
+    container_name: resumeai_template_service
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${TEMPLATE_SERVICE_PORT:-3005}:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - resumeai_net
+
+  # -------- 数据分析服务（Python FastAPI + ClickHouse）--------
+  analytics-service:
+    build:
+      context: .
+      dockerfile: services/analytics-service/Dockerfile
+    container_name: resumeai_analytics_service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ANALYTICS_DB_BACKEND: clickhouse
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_HTTP_PORT: 8123
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_DATABASE: resumeai_analytics
+    ports:
+      - "${ANALYTICS_SERVICE_PORT:-3006}:3006"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - resumeai_net
+
+  # -------- 支付订阅服务（Python FastAPI + Stripe + PostgreSQL）--------
+  payment-service:
+    build:
+      context: .
+      dockerfile: services/payment-service/Dockerfile
+    container_name: resumeai_payment_service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PAYMENT_DB_BACKEND: postgres
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: resumeai
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: resumeai_db
+    ports:
+      - "${PAYMENT_SERVICE_PORT:-3007}:3007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - resumeai_net
+
+  # ═══════════════════ Nginx 反向代理 ═══════════════════
+
+  nginx:
+    image: nginx:alpine
+    container_name: resumeai_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api-gateway
+      - resume-service
+      - export-service
+      - ai-dispatch
+      - user-service
+      - template-service
+      - analytics-service
+      - payment-service
+    networks:
+      - resumeai_net
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  clickhousedata:
+
+networks:
+  resumeai_net:
+    driver: bridge

@@ -1,0 +1,115 @@
+// Prisma Schema for ResumeAI
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------- 用户 --------
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  name        String
+  password    String
+  avatar      String?
+  subscription String   @default("free")
+  stripeId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  resumes Resume[]
+
+  @@index([email])
+  @@map("users")
+}
+
+// -------- 简历（主表）--------
+model Resume {
+  id          String        @id @default(uuid())
+  userId      String
+  title       String
+  companyType String        // internet|foreign|state|startup|consulting
+  style       String        @default("modern")
+  data        Json?         // 简历完整数据
+  isPublic    Boolean       @default(false)
+  viewCount   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions ResumeVersion[]
+
+  @@index([userId])
+  @@index([companyType])
+  @@map("resumes")
+}
+
+// -------- 简历版本 --------
+model ResumeVersion {
+  id            String   @id @default(uuid())
+  resumeId      String
+  companyType   String
+  style         String
+  data          Json?    // 版本化的简历数据
+  atsScore      Int?     // ATS 评分 0-100
+  keywords      String[] // ATS 匹配关键词
+  modelUsed     String?  // 使用的 AI 模型
+  tokensUsed    Int      @default(0)
+  isActive      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@index([resumeId])
+  @@map("resume_versions")
+}
+
+// -------- 模板 --------
+model Template {
+  id          String   @id @default(uuid())
+  name        String
+  style       String
+  thumbnail   String
+  description String
+  css         String   // 渲染 CSS
+  isPremium   Boolean  @default(false)
+  tags        String[]
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("templates")
+}
+
+// -------- 导出记录 --------
+model ExportRecord {
+  id         String   @id @default(uuid())
+  resumeId   String?
+  versionId  String?
+  format     String   // pdf|docx|pptx|png|jpg|html|md
+  fileUrl    String
+  fileSize   Int      // bytes
+  userId     String
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@map("export_records")
+}
+
+// -------- AI 使用日志 --------
+model AIUsageLog {
+  id           String   @id @default(uuid())
+  userId       String
+  provider     String   // openai|anthropic|google...
+  model        String
+  tokensInput  Int
+  tokensOutput Int
+  cost         Float    // USD
+  latency      Int      // ms
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("ai_usage_logs")
+}

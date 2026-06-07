@@ -1,0 +1,12 @@
+{
+  "name": "@resumeai/template-service",
+  "version": "1.0.0",
+  "description": "ResumeAI 模板管理服务 (Python FastAPI)",
+  "main": "src/index.py",
+  "scripts": {
+    "dev": "uvicorn src.index:app --reload --port 3005",
+    "start": "uvicorn src.index:app --host 0.0.0.0 --port 3005",
+    "test": "python -m pytest tests/ -v --tb=short"
+  },
+  "private": true
+}

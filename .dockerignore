@@ -1,0 +1,64 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Node
+node_modules/
+*/node_modules/
+**/node_modules/
+.npm/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.secrets/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Docker volumes
+volumes/
+
+# Temp
+tmp/
+temp/
+*.tmp
+
+# Test coverage
+coverage/
+*.lcov
+
+# Documentation
+docs/
+*.md
