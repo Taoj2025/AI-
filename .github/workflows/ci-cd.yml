@@ -34,6 +34,7 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: |
+          pip install --upgrade pip
           cd services/${{ matrix.service }}
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
