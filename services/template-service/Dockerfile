@@ -7,7 +7,7 @@ COPY services/template-service/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制源码
-COPY services/template-service/index.py ./
+COPY services/template-service/src/index.py ./
 COPY services/template-service/tests/ ./tests/
 
 EXPOSE 3005

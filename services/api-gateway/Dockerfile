@@ -1,26 +1,23 @@
-FROM node:20-alpine AS base
+# API Gateway — 统一入口 (npm)
+FROM node:22-alpine AS builder
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+# Install deps
+COPY services/api-gateway/package.json services/api-gateway/package-lock.json ./
+RUN npm ci
 
-# ---- 依赖阶段 ----
-FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY services/api-gateway/package.json ./services/api-gateway/
-RUN pnpm install --frozen-lockfile
+# Copy source & build
+COPY services/api-gateway/tsconfig.json ./
+COPY services/api-gateway/src ./src/
+RUN npm run build
 
-# ---- 构建阶段 ----
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/pnpm-lock.yaml ./
-COPY . .
-RUN pnpm --filter @resumeai/api-gateway build
-
-# ---- 运行阶段 ----
-FROM base
+# ---- Production ----
+FROM node:22-alpine AS runner
+WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/services/api-gateway/dist ./dist
-COPY --from=builder /app/services/api-gateway/package.json ./package.json
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./package.json
+
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
     CMD wget -qO- http://localhost:3000/health || exit 1

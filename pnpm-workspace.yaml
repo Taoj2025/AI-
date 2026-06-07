@@ -4,7 +4,11 @@ packages:
   - "apps/*"
   # 共享包
   - "packages/*"
-  # 微服务项目
-  - "services/*"
+  # Python 微服务（使用 pip，npm 服务排除）
+  - "services/ai-dispatch"
+  - "services/export-service"
+  - "services/template-service"
+  - "services/analytics-service"
+  - "services/payment-service"
   # 基础设施（不参与 workspace）
   # infra/ 单独管理

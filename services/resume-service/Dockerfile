@@ -1,28 +1,31 @@
-FROM node:20-alpine AS base
+# Resume Service — 简历 CRUD 微服务 (npm, depends on packages/shared-types)
+FROM node:22-alpine AS shared-builder
 WORKDIR /app
+COPY packages/shared-types/package.json packages/shared-types/package-lock.json ./packages/shared-types/
+RUN cd packages/shared-types && npm ci
+COPY packages/shared-types/tsconfig.json packages/shared-types/src ./packages/shared-types/
+RUN cd packages/shared-types && npm run build
 
-# 安装 pnpm
-RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+# ---- Build resume-service ----
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY --from=shared-builder /app/packages/shared-types /app/packages/shared-types
+COPY services/resume-service/package.json services/resume-service/package-lock.json ./
+RUN npm ci
+COPY services/resume-service/tsconfig.json ./
+COPY services/resume-service/prisma ./prisma/
+COPY services/resume-service/src ./src/
+RUN npx prisma generate && npm run build
 
-# ---- 依赖阶段 ----
-FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY services/resume-service/package.json ./services/resume-service/
-COPY packages/shared-types/package.json ./packages/shared-types/
-RUN pnpm install --frozen-lockfile
-
-# ---- 构建阶段 ----
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/pnpm-lock.yaml ./
-COPY . .
-RUN pnpm --filter @resumeai/resume-service build
-
-# ---- 运行阶段 ----
-FROM base
+# ---- Production ----
+FROM node:22-alpine AS runner
+WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/services/resume-service/dist ./dist
-COPY --from=builder /app/services/resume-service/package.json ./package.json
-COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./package.json
+
 EXPOSE 3001
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD wget -qO- http://localhost:3001/health || exit 1
 CMD ["node", "dist/index.js"]

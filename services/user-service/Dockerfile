@@ -1,26 +1,23 @@
-FROM node:20-alpine AS base
+# User Service — 用户认证微服务 (npm)
+FROM node:22-alpine AS builder
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+# Install deps
+COPY services/user-service/package.json services/user-service/package-lock.json ./
+RUN npm ci
 
-# ---- 依赖阶段 ----
-FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY services/user-service/package.json ./services/user-service/
-RUN pnpm install --frozen-lockfile
+# Copy source & build
+COPY services/user-service/tsconfig.json ./
+COPY services/user-service/src ./src/
+RUN npm run build
 
-# ---- 构建阶段 ----
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/pnpm-lock.yaml ./
-COPY . .
-RUN pnpm --filter @resumeai/user-service build
-
-# ---- 运行阶段 ----
-FROM base
+# ---- Production ----
+FROM node:22-alpine AS runner
+WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/services/user-service/dist ./dist
-COPY --from=builder /app/services/user-service/package.json ./package.json
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./package.json
+
 EXPOSE 3004
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
     CMD wget -qO- http://localhost:3004/health || exit 1

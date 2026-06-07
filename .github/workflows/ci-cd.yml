@@ -51,7 +51,7 @@ jobs:
           path: services/${{ matrix.service }}/results.xml
 
   # ============================================================
-  # Job 2: Node.js 服务测试
+  # Job 2: Node.js 服务测试 (使用 npm，非 pnpm)
   # ============================================================
   test-node:
     name: Node.js Services Test
@@ -66,16 +66,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install pnpm
-        run: npm install -g pnpm
+          cache: npm
+          cache-dependency-path: services/${{ matrix.service }}/package-lock.json
       - name: Install dependencies
         run: |
           cd services/${{ matrix.service }}
-          pnpm install --frozen-lockfile || pnpm install
+          npm ci || npm install
       - name: Run tests
         run: |
           cd services/${{ matrix.service }}
-          pnpm test
+          npm test
 
   # ============================================================
   # Job 3: Web 前端构建
@@ -113,15 +113,15 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: api-gateway, context: services/api-gateway, dockerfile: services/api-gateway/Dockerfile }
-          - { name: ai-dispatch, context: services/ai-dispatch, dockerfile: services/ai-dispatch/Dockerfile }
-          - { name: resume-service, context: services/resume-service, dockerfile: services/resume-service/Dockerfile }
-          - { name: export-service, context: services/export-service, dockerfile: services/export-service/Dockerfile }
-          - { name: user-service, context: services/user-service, dockerfile: services/user-service/Dockerfile }
-          - { name: template-service, context: services/template-service, dockerfile: services/template-service/Dockerfile }
-          - { name: analytics-service, context: services/analytics-service, dockerfile: services/analytics-service/Dockerfile }
-          - { name: payment-service, context: services/payment-service, dockerfile: services/payment-service/Dockerfile }
-          - { name: web-frontend, context: apps/web, dockerfile: apps/web/Dockerfile }
+          - { name: api-gateway, context: ., dockerfile: services/api-gateway/Dockerfile }
+          - { name: ai-dispatch, context: ., dockerfile: services/ai-dispatch/Dockerfile }
+          - { name: resume-service, context: ., dockerfile: services/resume-service/Dockerfile }
+          - { name: export-service, context: ., dockerfile: services/export-service/Dockerfile }
+          - { name: user-service, context: ., dockerfile: services/user-service/Dockerfile }
+          - { name: template-service, context: ., dockerfile: services/template-service/Dockerfile }
+          - { name: analytics-service, context: ., dockerfile: services/analytics-service/Dockerfile }
+          - { name: payment-service, context: ., dockerfile: services/payment-service/Dockerfile }
+          - { name: web-frontend, context: ., dockerfile: apps/web/Dockerfile }
     steps:
       - uses: actions/checkout@v4
       - name: Log in to Container Registry
