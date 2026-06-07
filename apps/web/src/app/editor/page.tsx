@@ -48,8 +48,9 @@ const STEPS: Step[] = [
   { id: 1, name: '输入方式', icon: '📝' },
   { id: 2, name: '选择模型', icon: '🤖' },
   { id: 3, name: '公司类型', icon: '🏢' },
-  { id: 4, name: '简历风格', icon: '🎨' },
-  { id: 5, name: '开始生成', icon: '🚀' },
+  { id: 4, name: '目标职位', icon: '🎯' },
+  { id: 5, name: '简历风格', icon: '🎨' },
+  { id: 6, name: '确认生成', icon: '✅' },
 ];
 
 const INPUT_METHODS: InputMethod[] = [
@@ -76,28 +77,29 @@ const MODELS: Model[] = [
 ];
 
 const COMPANY_TYPES: CompanyType[] = [
-  { id: 'internet', name: '互联网大厂', icon: '🏢', desc: '字节/阿里/腾讯/美团' },
-  { id: 'foreign', name: '外企', icon: '🌍', desc: 'Google/Apple/McKinsey' },
-  { id: 'soe', name: '国企/体制', icon: '🏛️', desc: '央企/国企/事业单位' },
+  { id: 'internet_giant', name: '互联网大厂', icon: '🏢', desc: '字节/阿里/腾讯/美团' },
+  { id: 'foreign_company', name: '外企', icon: '🌍', desc: 'Google/Apple/McKinsey' },
+  { id: 'state_owned', name: '国企/体制', icon: '🏛️', desc: '央企/国企/事业单位' },
   { id: 'startup', name: '创业公司', icon: '🚀', desc: 'A轮+/独角兽' },
   { id: 'consulting', name: '咨询/金融', icon: '📊', desc: 'MBB/四大/投行' },
 ];
 
 const STYLES: Style[] = [
-  { id: 'classic', name: '经典', desc: '传统商务风格', color: 'from-gray-600 to-gray-700' },
-  { id: 'modern', name: '现代', desc: '简约时尚设计', color: 'from-blue-500 to-indigo-600' },
+  { id: 'business', name: '商务', desc: '传统专业风格', color: 'from-gray-600 to-gray-700' },
   { id: 'minimal', name: '极简', desc: 'Less is more', color: 'from-gray-400 to-gray-500' },
   { id: 'creative', name: '创意', desc: '大胆独特设计', color: 'from-pink-500 to-purple-600' },
-  { id: 'academic', name: '学术', desc: '论文/项目突出', color: 'from-indigo-500 to-blue-600' },
-  { id: 'executive', name: '高管', desc: '高端领导力风格', color: 'from-amber-600 to-orange-700' },
+  { id: 'technical', name: '技术', desc: '突出技术栈和项目', color: 'from-blue-500 to-indigo-600' },
+  { id: 'academic', name: '学术', desc: '论文/研究突出', color: 'from-indigo-500 to-blue-600' },
+  { id: 'international', name: '国际', desc: '全球化风格', color: 'from-amber-600 to-orange-700' },
 ];
 
 export default function EditorPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedInput, setSelectedInput] = useState('text');
   const [selectedModel, setSelectedModel] = useState('gpt-4o');
-  const [selectedCompany, setSelectedCompany] = useState('internet');
-  const [selectedStyle, setSelectedStyle] = useState('modern');
+  const [selectedCompany, setSelectedCompany] = useState('internet_giant');
+  const [selectedStyle, setSelectedStyle] = useState('business');
+  const [targetJob, setTargetJob] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -119,7 +121,7 @@ export default function EditorPage() {
           experience: formData.experience,
           education: formData.education,
           skills: formData.skills,
-          target_job: (document.querySelector('input[name="targetJob"]') as HTMLInputElement)?.value || '',
+          target_job: targetJob,
           company_type: selectedCompany,
           style: selectedStyle,
           model: selectedModel,
@@ -254,8 +256,33 @@ export default function EditorPage() {
           </div>
         )}
 
-        {/* Step 4: 简历风格 */}
+        {/* Step 4: 目标职位 */}
         {currentStep === 4 && (
+          <div className="animate-fade-in max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold mb-2">目标职位</h2>
+            <p className="text-gray-500 mb-8">告诉 AI 你申请什么岗位，让优化更精准</p>
+            <div className="card p-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                目标职位名称
+              </label>
+              <input
+                type="text"
+                value={targetJob}
+                onChange={(e) => setTargetJob(e.target.value)}
+                placeholder="例如：高级前端工程师 / 产品经理 / 数据分析师"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent text-lg"
+              />
+              <p className="mt-2 text-xs text-gray-400">填写目标岗位，AI 将针对性优化简历关键词和技能描述</p>
+            </div>
+            <div className="mt-8 flex justify-between">
+              <button onClick={() => setCurrentStep(3)} className="btn-secondary">← 上一步</button>
+              <button onClick={() => setCurrentStep(5)} className="btn-primary">下一步 →</button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: 选择简历风格 */}
+        {currentStep === 5 && (
           <div className="animate-fade-in">
             <h2 className="text-2xl font-bold mb-2">选择简历风格</h2>
             <p className="text-gray-500 mb-8">不同风格适合不同行业和职位</p>
@@ -283,14 +310,14 @@ export default function EditorPage() {
               ))}
             </div>
             <div className="mt-8 flex justify-between">
-              <button onClick={() => setCurrentStep(3)} className="btn-secondary">← 上一步</button>
-              <button onClick={() => setCurrentStep(5)} className="btn-primary">下一步 →</button>
+              <button onClick={() => setCurrentStep(4)} className="btn-secondary">← 上一步</button>
+              <button onClick={() => setCurrentStep(6)} className="btn-primary">下一步 →</button>
             </div>
           </div>
         )}
 
-        {/* Step 5: 确认 & 生成 */}
-        {currentStep === 5 && (
+        {/* Step 6: 确认 & 生成 */}
+        {currentStep === 6 && (
           <div className="animate-fade-in max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold mb-6">确认生成配置</h2>
             <div className="card p-6 space-y-4">
@@ -306,7 +333,11 @@ export default function EditorPage() {
                 <span className="text-gray-500">目标公司</span>
                 <span className="font-medium">{COMPANY_TYPES.find(c => c.id === selectedCompany)?.name}</span>
               </div>
-              <div className="flex items-center justify-between py-2">
+              <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                <span className="text-gray-500">目标职位</span>
+                <span className="font-medium">{targetJob || '未设置'}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
                 <span className="text-gray-500">简历风格</span>
                 <span className="font-medium">{STYLES.find(s => s.id === selectedStyle)?.name}</span>
               </div>
@@ -314,7 +345,7 @@ export default function EditorPage() {
 
             {!isGenerating && !generatedResult ? (
               <div className="mt-8 flex justify-between">
-                <button onClick={() => setCurrentStep(4)} className="btn-secondary">← 上一步</button>
+                <button onClick={() => setCurrentStep(5)} className="btn-secondary">← 上一步</button>
                 <button onClick={handleGenerate} className="btn-primary text-lg px-8">
                   🚀 开始生成简历
                 </button>

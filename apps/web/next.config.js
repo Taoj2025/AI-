@@ -7,9 +7,19 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        // AI 生成简历 — 直接端点
+        source: '/api/generate',
+        destination: `${process.env.AI_SERVICE_URL || 'http://localhost:3003'}/api/generate`,
+      },
+      {
         // AI 调度服务 (ai-dispatch) - 端口 3003
         source: '/api/ai/:path*',
         destination: `${process.env.AI_SERVICE_URL || 'http://localhost:3003'}/api/ai/:path*`,
+      },
+      {
+        // AI 模型列表
+        source: '/api/models',
+        destination: `${process.env.AI_SERVICE_URL || 'http://localhost:3003'}/api/ai/models`,
       },
       {
         // 简历服务 (resume-service) - 端口 3001
@@ -30,6 +40,11 @@ const nextConfig = {
         // 导出服务 (export-service) - 端口 3002
         source: '/api/export/:path*',
         destination: `${process.env.EXPORT_SERVICE_URL || 'http://localhost:3002'}/api/export/:path*`,
+      },
+      {
+        // 支付服务 (payment-service) - 端口 3007
+        source: '/api/:path(plans|subscriptions|transactions|invoices|usage|webhooks)/:rest*',
+        destination: `${process.env.PAYMENT_SERVICE_URL || 'http://localhost:3007'}/api/:path/:rest*`,
       },
     ];
   },

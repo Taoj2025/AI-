@@ -46,9 +46,9 @@ const MODELS: Model[] = [
 ];
 
 const COMPANY_TYPES: CompanyType[] = [
-  { type: 'internet', name: '互联网大厂', icon: '🏢', desc: '字节/阿里/腾讯/美团' },
-  { type: 'foreign', name: '外企', icon: '🌍', desc: 'Google/Apple/McKinsey' },
-  { type: 'soe', name: '国企/体制', icon: '🏛️', desc: '央企/国企/事业单位' },
+  { type: 'internet_giant', name: '互联网大厂', icon: '🏢', desc: '字节/阿里/腾讯/美团' },
+  { type: 'foreign_company', name: '外企', icon: '🌍', desc: 'Google/Apple/McKinsey' },
+  { type: 'state_owned', name: '国企/体制', icon: '🏛️', desc: '央企/国企/事业单位' },
   { type: 'startup', name: '创业公司', icon: '🚀', desc: 'A轮+/独角兽' },
   { type: 'consulting', name: '咨询/金融', icon: '📊', desc: 'MBB/四大/投行' },
 ];
