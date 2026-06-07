@@ -32,9 +32,14 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
+      - name: Install Rust (for pydantic-core build)
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Install dependencies
         run: |
           pip install --upgrade pip
+          python --version  # debug: verify correct Python version
           cd services/${{ matrix.service }}
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
