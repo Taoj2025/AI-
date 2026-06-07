@@ -33,6 +33,7 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3003}
+ENV OUTPUT_STANDALONE=1
 
 # Build the web app
 RUN pnpm --filter web build

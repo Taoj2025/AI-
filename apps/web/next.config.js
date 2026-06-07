@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Standalone output for Docker — enabled only when OUTPUT_STANDALONE is set
+  output: process.env.OUTPUT_STANDALONE === '1' ? 'standalone' : undefined,
   reactStrictMode: true,
   images: {
     domains: ['localhost', 'cdn.resumeai.com'],
