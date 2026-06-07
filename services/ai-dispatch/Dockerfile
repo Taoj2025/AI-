@@ -1,5 +1,5 @@
 # AI Dispatch Service — OpenClaw 编排 + Hermes 适配
-FROM python:3.13-slim
+FROM python:3.12-slim
 WORKDIR /app
 
 # 安装系统依赖

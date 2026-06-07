@@ -1,5 +1,5 @@
 # Payment Service — 支付订阅微服务 v2.0 (Stripe + PostgreSQL)
-FROM python:3.13-slim
+FROM python:3.12-slim
 WORKDIR /app
 
 # Install system deps for asyncpg

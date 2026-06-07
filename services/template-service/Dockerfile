@@ -1,5 +1,5 @@
 # Template Service — 模板管理微服务
-FROM python:3.13-slim
+FROM python:3.12-slim
 WORKDIR /app
 
 # 安装 Python 依赖

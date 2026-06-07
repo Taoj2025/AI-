@@ -1,5 +1,5 @@
 # Analytics Service — 数据分析微服务 v2.0 (ClickHouse)
-FROM python:3.13-slim
+FROM python:3.12-slim
 WORKDIR /app
 
 # Install system deps for clickhouse-connect

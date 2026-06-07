@@ -1,7 +1,7 @@
 # Export Service - 简历导出微服务
 # 支持: PDF / Word / PPT / PNG / JPG / HTML / Markdown
 
-FROM python:3.13-slim AS base
+FROM python:3.12-slim AS base
 WORKDIR /app
 
 # 安装系统依赖
