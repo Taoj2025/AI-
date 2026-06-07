@@ -63,6 +63,14 @@ MODEL_PRICING: dict[str, dict[str, float]] = {
     "gemini-1.5-flash":     {"input": 0.075, "output": 0.30},
     "ernie-4.0":            {"input": 0.12,  "output": 0.12},   # 元/1K tokens（实际需换算）
     "qwen-max":             {"input": 0.04,  "output": 0.12},
+    # MiniMax 价格（USD/1M tokens）
+    "MiniMax-M3":           {"input": 2.0,   "output": 8.0},
+    "MiniMax-M2.7":         {"input": 1.0,   "output": 4.0},
+    "MiniMax-M2.7-highspeed": {"input": 0.5, "output": 2.0},
+    "MiniMax-M2.5":         {"input": 0.8,   "output": 3.0},
+    "MiniMax-M2.5-highspeed": {"input": 0.4, "output": 1.5},
+    "MiniMax-M2.1":         {"input": 0.6,   "output": 2.5},
+    "MiniMax-M2":           {"input": 0.4,   "output": 1.5},
 }
 
 
@@ -218,6 +226,64 @@ class AnthropicProvider(BaseProvider):
         )
 
 
+# ─────────────────────────── MiniMax Provider ───────────────────────────
+
+class MiniMaxProvider(BaseProvider):
+    """MiniMax 系列（OpenAI 兼容接口）"""
+
+    SUPPORTED_MODELS = {
+        "MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed",
+        "MiniMax-M2.5", "MiniMax-M2.5-highspeed",
+        "MiniMax-M2.1", "MiniMax-M2.1-highspeed",
+        "MiniMax-M2",
+    }
+
+    async def chat(
+        self,
+        model: str,
+        messages: list[Message],
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+        stream: bool = False,
+        **kwargs,
+    ) -> HermesResponse:
+        try:
+            from openai import AsyncOpenAI
+        except ImportError:
+            raise ImportError("请安装 openai: pip install openai")
+
+        client = AsyncOpenAI(
+            api_key=self.config.api_key,
+            base_url=self.config.base_url or "https://api.minimaxi.com/v1",
+            timeout=self.config.timeout,
+        )
+
+        start = time.monotonic()
+        response = await client.chat.completions.create(
+            model=model,
+            messages=self._build_messages(messages),
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=False,
+            **kwargs,
+        )
+        latency = (time.monotonic() - start) * 1000
+
+        usage = response.usage
+        return HermesResponse(
+            content=response.choices[0].message.content,
+            model=model,
+            provider="minimax",
+            prompt_tokens=usage.prompt_tokens if usage else 0,
+            completion_tokens=usage.completion_tokens if usage else 0,
+            total_tokens=usage.total_tokens if usage else 0,
+            latency_ms=latency,
+            cost_usd=calc_cost(model,
+                               usage.prompt_tokens if usage else 0,
+                               usage.completion_tokens if usage else 0),
+        )
+
+
 # ─────────────────────────── Mock Provider（测试用）───────────────────────────
 
 class MockProvider(BaseProvider):
@@ -277,6 +343,14 @@ class HermesAdapter:
         "gemini-1.5-flash": "google",
         "ernie-4.0": "baidu",
         "qwen-max": "alibaba",
+        # MiniMax
+        "MiniMax-M3": "minimax",
+        "MiniMax-M2.7": "minimax",
+        "MiniMax-M2.7-highspeed": "minimax",
+        "MiniMax-M2.5": "minimax",
+        "MiniMax-M2.5-highspeed": "minimax",
+        "MiniMax-M2.1": "minimax",
+        "MiniMax-M2": "minimax",
     }
 
     # 故障转移链
@@ -306,6 +380,11 @@ class HermesAdapter:
 
         if key := os.getenv("ANTHROPIC_API_KEY"):
             providers["anthropic"] = AnthropicProvider(ProviderConfig(api_key=key))
+
+        if key := os.getenv("MINIMAX_API_KEY"):
+            providers["minimax"] = MiniMaxProvider(
+                ProviderConfig(api_key=key, base_url=os.getenv("MINIMAX_BASE_URL"))
+            )
 
         return providers
 

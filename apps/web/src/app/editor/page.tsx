@@ -35,6 +35,7 @@ const MODELS = [
   { id: 'hunyuan-pro', name: '混元 Pro', provider: '腾讯', color: 'bg-red-500', badge: '新' },
   { id: 'glm-4-plus', name: 'GLM-4 Plus', provider: '智谱', color: 'bg-red-500', badge: '新' },
   { id: 'deepseek-chat', name: 'DeepSeek Chat', provider: 'DeepSeek', color: 'bg-teal-500', badge: '超值' },
+  { id: 'MiniMax-M3', name: 'MiniMax M3', provider: 'MiniMax', color: 'bg-amber-500', badge: '新' },
   { id: 'moonshot-v1-128k', name: 'Moonshot 128K', provider: 'Moonshot', color: 'bg-indigo-500' },
   { id: 'yi-large', name: 'Yi-Large', provider: '零一万物', color: 'bg-indigo-500' },
 ];

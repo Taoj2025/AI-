@@ -44,6 +44,7 @@ export default function SettingsPage() {
                 <option>GPT-4o</option>
                 <option>Claude-3.5 Sonnet</option>
                 <option>DeepSeek Chat</option>
+                <option>MiniMax M3</option>
                 <option>文心一言 4.0</option>
                 <option>通义千问 Max</option>
                 <option>智谱 GLM-4 Plus</option>

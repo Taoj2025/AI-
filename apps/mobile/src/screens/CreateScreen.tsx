@@ -71,6 +71,7 @@ export default function CreateScreen() {
       openai: 'gpt-4o', anthropic: 'claude-3-5-sonnet-20241022',
       google: 'gemini-1.5-pro', baidu: 'ernie-4.0-turbo',
       ali: 'qwen-max', deepseek: 'deepseek-chat',
+      minimax: 'MiniMax-M3',
     };
     return map[provider] ?? 'gpt-4o';
   };
@@ -112,6 +113,7 @@ export default function CreateScreen() {
             { provider: 'google', label: 'Gemini 1.5 Pro', desc: '多模态能力强' },
             { provider: 'deepseek', label: 'DeepSeek Chat', desc: '中文理解优秀，性价比高' },
             { provider: 'ali', label: '通义千问 Qwen', desc: '中文简历首选' },
+            { provider: 'minimax', label: 'MiniMax-M3', desc: '编程/Agent能力SOTA，1M上下文' },
           ].map(opt => (
             <TouchableOpacity
               key={opt.provider}

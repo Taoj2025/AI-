@@ -15,6 +15,7 @@ const MODELS = [
   { name: '混元 Pro', provider: '腾讯', color: 'bg-red-500', badge: '新' },
   { name: 'GLM-4 Plus', provider: '智谱', color: 'bg-red-500', badge: '新' },
   { name: 'DeepSeek', provider: 'DeepSeek', color: 'bg-teal-500', badge: '超值' },
+  { name: 'MiniMax M3', provider: 'MiniMax', color: 'bg-amber-500', badge: '新' },
 ];
 
 const COMPANY_TYPES = [
