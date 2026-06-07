@@ -66,7 +66,11 @@ def create_hermes() -> HermesAdapter:
 }
 ```'''
         )
-        return HermesAdapter(providers={"mock": mock_provider})
+        # Mock 模式：将 mock provider 注册到所有模型对应的 provider 名称下
+        mock_providers = {}
+        for ptype in set(HermesAdapter.MODEL_PROVIDER_MAP.values()):
+            mock_providers[ptype] = mock_provider
+        return HermesAdapter(providers=mock_providers)
     return HermesAdapter()
 
 hermes = create_hermes()
