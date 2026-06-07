@@ -78,11 +78,36 @@ jobs:
           pnpm test
 
   # ============================================================
-  # Job 3: Docker 构建与推送
+  # Job 3: Web 前端构建
+  # ============================================================
+  build-web:
+    name: Web Frontend Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pnpm
+        run: npm install -g pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile || pnpm install
+      - name: Build web app
+        run: pnpm --filter web build
+        env:
+          NODE_ENV: production
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: apps/web/.next
+
+  # ============================================================
+  # Job 4: Docker 构建与推送
   # ============================================================
   docker-build:
     name: Docker Build & Push
-    needs: [test-python, test-node]
+    needs: [test-python, test-node, build-web]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
@@ -96,6 +121,7 @@ jobs:
           - { name: template-service, context: services/template-service, dockerfile: services/template-service/Dockerfile }
           - { name: analytics-service, context: services/analytics-service, dockerfile: services/analytics-service/Dockerfile }
           - { name: payment-service, context: services/payment-service, dockerfile: services/payment-service/Dockerfile }
+          - { name: web-frontend, context: apps/web, dockerfile: apps/web/Dockerfile }
     steps:
       - uses: actions/checkout@v4
       - name: Log in to Container Registry
@@ -119,11 +145,11 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ============================================================
-  # Job 4: 安全扫描
+  # Job 5: 安全扫描
   # ============================================================
   security-scan:
     name: Security Scan
-    needs: [test-python, test-node]
+    needs: [test-python, test-node, build-web]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -137,7 +163,7 @@ jobs:
           format: 'table'
 
   # ============================================================
-  # Job 5: 部署到生产环境
+  # Job 6: 部署到生产环境
   # ============================================================
   deploy:
     name: Deploy to Production
@@ -158,5 +184,6 @@ jobs:
           # kubectl set image deployment/template-service template-service=${{ env.REGISTRY }}/${{ github.repository }}/template-service:${{ github.sha }}
           # kubectl set image deployment/analytics-service analytics-service=${{ env.REGISTRY }}/${{ github.repository }}/analytics-service:${{ github.sha }}
           # kubectl set image deployment/payment-service payment-service=${{ env.REGISTRY }}/${{ github.repository }}/payment-service:${{ github.sha }}
-          # kubectl rollout status deployment/api-gateway
+          # kubectl set image deployment/web-frontend website=${{ env.REGISTRY }}/${{ github.repository }}/web-frontend:${{ github.sha }}
+          # kubectl rollout status deployment/web-frontend
           echo "Deployment complete!"
