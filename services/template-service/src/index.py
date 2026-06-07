@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -196,8 +197,15 @@ def _seed_templates():
         }
 
 
-# ---- FastAPI App ----
-app = FastAPI(title="ResumeAI Template Service", version="1.0.0")
+# ---- FastAPI App (lifespan pattern) ----
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup: seed template data"""
+    _seed_templates()
+    yield
+    # Shutdown: nothing to clean up
+
+app = FastAPI(title="ResumeAI Template Service", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(CORSMiddleware,
     allow_origins=["*"],
@@ -205,10 +213,6 @@ app.add_middleware(CORSMiddleware,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.on_event("startup")
-async def startup():
-    _seed_templates()
 
 
 @app.get("/health")
